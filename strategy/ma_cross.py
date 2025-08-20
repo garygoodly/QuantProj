@@ -16,8 +16,6 @@ class MaCrossStrategy(bt.Strategy):
         self.win_count = 0
         self.loss_count = 0
         self.total_profit = 0
-        self.entry_dates = []
-        self.exit_dates = []
         self.trade_results = []
 
     def notify_order(self, order):
@@ -28,11 +26,9 @@ class MaCrossStrategy(bt.Strategy):
             if order.isbuy():
                 self.entry_price = order.executed.price
                 self.entry_date = self.data.datetime.date(0)
-                self.entry_dates.append(self.entry_date)
             else:
                 exit_price = order.executed.price
                 exit_date = self.data.datetime.date(0)
-                self.exit_dates.append(exit_date)
                 
                 # Calculate trade results
                 profit_pct = (exit_price / self.entry_price - 1) * 100
