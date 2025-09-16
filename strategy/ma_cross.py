@@ -1,71 +1,81 @@
+# -*- coding: utf-8 -*-
+"""
+MaCrossStrategy: Price-SMA crossover strategy using Backtrader.
+
+- Buy when close crosses above SMA(period).
+- Sell when close crosses below SMA(period).
+- Record closed trades via notify_trade to capture net PnL after commissions.
+"""
+
 import backtrader as bt
+
+
 class MaCrossStrategy(bt.Strategy):
     params = (
-        ('ma_period', 20),
+        ("ma_period", 20),  # SMA lookback period
     )
-    
+
     def __init__(self):
-        # Initialize moving average
+        # --- Indicators ---
+        # Simple Moving Average on close
         self.sma = bt.indicators.SimpleMovingAverage(
-            self.data.close, period=self.params.ma_period
+            self.data.close, period=self.p.ma_period
         )
-        
-        # Initialize trade statistics variables
-        self.trade_count = 0
-        self.win_count = 0
-        self.loss_count = 0
-        self.total_profit = 0.0
-        self.trade_results = []  # Store each trade details
-        
-        # Track current trade
-        self.current_trade = None
-        self.entry_price = 0.0
-        self.entry_time = None
+        # CrossOver indicator: >0 up-cross, <0 down-cross, 0 no cross
+        self.crossover = bt.ind.CrossOver(self.data.close, self.sma)
+
+        # --- Storage for closed trades ---
+        # We record closed trades in notify_trade to ensure PnL includes commissions
+        self.trades = []
 
     def next(self):
-        # If no position and close price crosses above moving average
-        if not self.position and self.data.close[0] > self.sma[0]:
-            # Buy
+        """Strategy logic executed on each bar."""
+        # Enter long on upward cross
+        if not self.position and self.crossover[0] > 0:
             self.buy()
-            
-        # If has position and close price crosses below moving average
-        elif self.position and self.data.close[0] < self.sma[0]:
-            # Sell
+
+        # Exit long on downward cross
+        elif self.position and self.crossover[0] < 0:
             self.sell()
 
-    def notify_order(self, order):
-        if order.status in [order.Completed]:
-            if order.isbuy():
-                # Record buy information
-                self.entry_price = order.executed.price
-                self.entry_time = self.datas[0].datetime.datetime()
-                self.current_trade = {
-                    'entry_time': self.entry_time,
-                    'entry_price': self.entry_price,
-                    'size': order.executed.size
+    def notify_trade(self, trade):
+        """Called by Backtrader when a trade is updated. We record results when closed."""
+        if trade.isclosed:
+            # Convert bt numeric datetimes to Python datetime (tz-naive)
+            dt_open = bt.num2date(trade.dtopen).replace(tzinfo=None)
+            dt_close = bt.num2date(trade.dtclose).replace(tzinfo=None)
+
+            # Derive implied exit price if size != 0 (for documentation)
+            exit_price = (
+                trade.price + (trade.pnl / abs(trade.size))
+                if trade.size != 0
+                else None
+            )
+
+            self.trades.append(
+                {
+                    "entry_time": dt_open,
+                    "exit_time": dt_close,
+                    "size": trade.size,
+                    "entry_price": trade.price,     # average entry price
+                    "exit_price": exit_price,       # implied average exit price
+                    "gross_pnl": trade.pnl,         # before commissions
+                    "net_pnl": trade.pnlcomm,       # after commissions
+                    "commission": trade.commission, # total commissions
                 }
-            else:  # Sell
-                if self.current_trade:
-                    # Calculate trade result
-                    exit_price = order.executed.price
-                    profit = (exit_price - self.entry_price) * order.executed.size
-                    
-                    self.current_trade.update({
-                        'exit_time': self.datas[0].datetime.datetime(),
-                        'exit_price': exit_price,
-                        'profit': profit,
-                        'status': 'win' if profit > 0 else 'loss'
-                    })
-                    
-                    # Update statistics
-                    self.trade_count += 1
-                    self.total_profit += profit
-                    
-                    if profit > 0:
-                        self.win_count += 1
-                    else:
-                        self.loss_count += 1
-                    
-                    # Save trade record
-                    self.trade_results.append(self.current_trade)
-                    self.current_trade = None
+            )
+
+    # Optional: monitor orders for debugging (kept minimal and safe)
+    def notify_order(self, order):
+        """Keep this minimal; we rely on notify_trade for PnL.
+        Useful hooks for debugging order states.
+        """
+        if order.status in [order.Canceled, order.Margin, order.Rejected]:
+            self.log(
+                f"Order {order.ref} not completed: status={order.getstatusname()}"
+            )
+
+    def log(self, txt):
+        """Simple logger for debugging."""
+        dt = self.datas[0].datetime.datetime(0)
+        print(f"[{dt}] {txt}")

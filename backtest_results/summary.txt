@@ -1,15 +1,27 @@
 === Backtest Results Summary ===
-Date: 2025-08-21 00:00:11
+Generated at: 2025-09-16 16:12:48
 Symbol: AAPL
 Period: 2021-01-01 to 2023-01-01
-Strategy: Moving Average Crossover (20 periods)
-Final Portfolio Value: $99989.85
-Initial Capital: $100,000.00
-Net Profit/Loss: $-10.15
-Return: -0.01%
-Total Trades: 24
-Winning Trades: 16
-Losing Trades: 8
-Total Profit/Loss: $3.24
-Win Rate: 66.67%
-Average Profit per Trade: $0.14
+Strategy: Price-SMA Cross (SMA period = 20)
+
+--- Portfolio ---
+Initial Cash: $100,000.00
+Final Value: $102,970.56
+Net P/L: $2,970.56
+Return: 2.97%
+
+--- Trades ---
+Total Closed Trades: 21
+Wins: 7
+Losses: 14
+Win Rate: 33.33%
+
+--- Risk/Quality ---
+Sharpe (annualized): 0.5076009658798605
+Max Drawdown (%): 2.92090354310143
+Max Drawdown Length (bars): 94
+
+--- Files ---
+- Chart: backtest_results\backtest_chart.png
+- Trades CSV: backtest_results\trade_history.csv
+- Summary: backtest_results\summary.txt
