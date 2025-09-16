@@ -1,0 +1,19 @@
+quant-backtest/
+├─ notebooks/              # 實驗/筆記用，非核心
+├─ results/                # 存放回測輸出（圖表/CSV/summary）
+├─ scripts/                # 可執行腳本（跑回測）
+│   └─ run_backtest.py
+├─ quantlab/               # 核心程式庫（模組化）
+│   ├─ core/               # 引擎、資料、分析器
+│   │   ├─ data.py
+│   │   ├─ engine.py
+│   │   ├─ analyzers.py
+│   │   └─ __init__.py
+│   ├─ strategies/         # 策略集合（每個策略一個檔案）
+│   │   ├─ ma_cross.py
+│   │   ├─ __init__.py     # 策略註冊表（名稱 → 類別）
+│   ├─ utils/              # 工具（檔案輸出、繪圖）
+│   │   └─ io.py
+│   └─ __init__.py
+└─ tests/                  # 單元測試（pytest）
+    └─ test_strategies.py
